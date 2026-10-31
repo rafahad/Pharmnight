@@ -6,11 +6,13 @@ import cinema
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LOGO = os.path.join(ROOT, 'assets', 'logo_original.webp')
-OUT = os.path.join(ROOT, 'build')
+LAYOUT = os.environ.get('LAYOUT', 'landscape')
+OUT = os.path.join(ROOT, 'build' if LAYOUT == 'landscape' else 'build_' + LAYOUT)
 NW = int(os.environ.get('WORKERS', '4'))
 
 
 def worker(k, a, b):
+    cinema.configure(LAYOUT)
     cinema.init(LOGO)
     seg = os.path.join(OUT, f'seg_{k:02d}.mkv')
     cmd = ['ffmpeg', '-y', '-loglevel', 'error', '-f', 'rawvideo', '-pix_fmt', 'rgb24',

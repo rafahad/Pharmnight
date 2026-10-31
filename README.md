@@ -11,6 +11,25 @@ An 18-second cinematic logo reveal: a vintage movie theatre, a film projector sw
 | `PharmNight2026_CinemaSoiree_score.wav` | The synced sound design and score on its own (48 kHz stereo) |
 | `final_frame.png` | Lossless last frame, the hero shot |
 
+### 9:16 vertical for Instagram Reels (`output/reels_9x16/`)
+
+| File | Use |
+|---|---|
+| `PharmNight2026_CinemaSoiree_Reels_1080x1920.mp4` | **Upload this to Reels.** 1080×1920, 24 fps, 18.0 s, with the cinematic soundtrack (about −14.7 LUFS, close to Instagram's loudness level) |
+| `PharmNight2026_CinemaSoiree_Reels_1080x1920_MUTED.mp4` | The same picture with no audio, for adding your own sound or an Instagram music track |
+| `PharmNight2026_CinemaSoiree_Reels_2160x3840_master.mp4` | Vertical 4K master |
+| `PharmNight2026_CinemaSoiree_Reels_cinematic_score.wav` | The cinematic soundtrack on its own |
+| `final_frame_vertical.png` | Lossless last frame |
+
+The vertical version is a separate render, not a crop. The stage is restaged for portrait: a narrower proscenium, curtains that open to frame the emblem, the projector and spotlights moved into the tall frame, and front-row seats along the bottom. The timing matches the 16:9 version exactly. The same logo rules apply, and in the 2160×3840 master the emblem's final 2 s are bit-identical to the source. In the 1080×1920 file the whole frame is scaled down to half size, so the emblem is shown at half resolution, but its colours and proportions are unchanged.
+
+The cinematic soundtrack adds a trailer-style layer to the score: a sub-bass drone, a rising swell and a reverse-cymbal whoosh into the reveal, a large brass-like impact with a low boom at 6.0 s, a lift at 10 s and a softer brass-like impact at the 14 s finale.
+
+```bash
+LAYOUT=vertical python3 src/render_all.py   # frames → build_vertical/
+bash src/encode_vertical.sh                  # Reels files → output/reels_9x16/
+```
+
 ## How the logo is protected
 
 The logo is **not** generated or redrawn by AI. The original bitmap (`assets/logo_original.webp`) is composited as one flat layer:

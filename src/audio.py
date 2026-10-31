@@ -4,6 +4,8 @@ import wave
 import numpy as np
 
 SR = 48000
+CINEMATIC = '--cinematic' in sys.argv
+OUT_PATH = [a for a in sys.argv[1:] if not a.startswith('--')]
 DUR = 18.0
 N = int(SR * DUR)
 t = np.arange(N) / SR
@@ -187,6 +189,68 @@ for st, m, pan in ((14.05, 93, 0.4), (14.25, 90, -0.5), (14.45, 98, 0.1), (14.6,
     add(bell(m, 2.0), st + 0.12, 0.04, pan)
 add(thump(36, 3.0, 0.15), 14.0, 0.45, 0.0)
 
+# ---------------------------------------------------------------- trailer layer (--cinematic)
+def saw_stack(notes, dur, cutoff_start, cutoff_end, att=0.02, dec=1.6, nh=40):
+    n = int(dur * SR)
+    tt = np.arange(n) / SR
+    out = np.zeros(n)
+    for m in notes:
+        for det in (-0.12, 0.0, 0.11):
+            f = midi(m) * 2 ** (det / 12)
+            for h in range(1, nh + 1):
+                if f * h > 9000:
+                    break
+                out += np.sin(2 * np.pi * f * h * tt + rng.uniform(0, 6.28)) / h
+    # time-varying brightness approximated by crossfading two filtered copies
+    dark = lowpass_fft(out, cutoff_end, 2)
+    bright = lowpass_fft(out, cutoff_start, 2)
+    k = np.exp(-tt / 0.35)
+    out = bright * k + dark * (1 - k)
+    e = np.minimum(tt / att, 1) * np.exp(-tt / dec)
+    return out * e / (len(notes) * 3)
+
+
+if CINEMATIC:
+    # sub drone on D, swelling through the opening
+    n = int(6.2 * SR)
+    tt = np.arange(n) / SR
+    drone = (np.sin(2 * np.pi * midi(26) * tt) + 0.5 * np.sin(2 * np.pi * midi(38) * tt + 1.0) +
+             0.25 * np.sin(2 * np.pi * midi(45) * tt + 2.0))
+    drone *= np.clip(tt / 3.5, 0, 1) ** 2 * (1 - np.clip((tt - 5.85) / 0.35, 0, 1))
+    add(drone, 0.4, 0.22, 0.0)
+    # tension riser into the reveal: rising band-passed noise + rising tone
+    n = int(1.9 * SR)
+    tt = np.arange(n) / SR
+    k = tt / 1.9
+    ris = np.zeros(n)
+    blk = 2400
+    noise = rng.standard_normal(n)
+    for i in range(0, n, blk):
+        c = 400 + 7000 * (i / n) ** 2
+        seg_ = bandpass_fft(noise[i:i + blk + 600], c * 0.6, c * 1.6)[:min(blk, n - i)]
+        ris[i:i + len(seg_)] = seg_
+    tone = np.sin(2 * np.pi * np.cumsum(110 * 2 ** (2.5 * k)) / SR) * 0.3
+    ris = (ris / (np.abs(ris).max() + 1e-9) + tone) * k ** 2.5
+    add(ris, 4.08, 0.20, -0.2)
+    add(np.roll(ris, 800), 4.08, 0.20, 0.2)
+    # reverse-cymbal swell ending exactly on the reveal
+    n = int(1.6 * SR)
+    cym = bandpass_fft(rng.standard_normal(n), 4000, 16000)
+    cym *= (np.arange(n) / n) ** 3
+    add(cym / (np.abs(cym).max() + 1e-9), 5.98 - 1.6, 0.10, 0.0)
+    # THE REVEAL: braam + sub boom + noise hit
+    add(saw_stack([26, 38, 45, 50, 57], 3.2, 3800, 600, dec=1.4), 5.98, 0.55, -0.1)
+    add(saw_stack([26, 38, 45, 50, 57], 3.2, 3800, 600, dec=1.4), 5.99, 0.55, 0.1)
+    add(thump(32, 3.0, 0.6), 5.98, 0.8, 0.0)
+    add(noise_burst(1.2, 80, 2500, a=0.001, d=0.25), 5.98, 0.35, 0.0)
+    # small lift into the arc (10 s)
+    add(noise_burst(1.0, 2000, 10000, a=0.7, d=0.2), 9.3, 0.06, 0.0)
+    add(thump(38, 2.0, 0.3), 10.0, 0.35, 0.0)
+    # finale: softer braam on D major + sub
+    add(saw_stack([38, 45, 50, 54, 57], 3.8, 2600, 700, att=0.06, dec=1.8), 14.0, 0.32, 0.0)
+    add(thump(30, 3.5, 0.4), 14.0, 0.6, 0.0)
+
+
 # ---------------------------------------------------------------- reverb + master
 def reverb(x, seed, secs=2.6):
     r = np.random.default_rng(seed)
@@ -210,7 +274,7 @@ peak = np.abs(mix).max()
 mix = mix / peak * 0.89                      # ~ -1 dBFS peak
 mix = np.tanh(mix * 1.1) / np.tanh(1.1)       # soft limiter
 pcm = (np.clip(mix, -1, 1) * 32767).astype(np.int16)
-with wave.open(sys.argv[1] if len(sys.argv) > 1 else 'score.wav', 'wb') as w:
+with wave.open(OUT_PATH[0] if OUT_PATH else 'score.wav', 'wb') as w:
     w.setnchannels(2)
     w.setsampwidth(2)
     w.setframerate(SR)

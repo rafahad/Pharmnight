@@ -44,6 +44,17 @@ LOGO_PATH = None
 LOGO_CX, LOGO_CY = 625.66, 612.30
 LOGO_R = 575.0             # includes the outer gold ring (r~548) + cream margin
 LOGO_TL_FINAL = (1294, 468)  # integer top-left in the final 4K frame
+
+# layout-dependent staging (landscape defaults; see configure())
+LAYOUT = 'landscape'
+CURT_OPEN = 1190.0         # |x| of the curtains' inner edge when fully open
+CURT_N = 8.0               # pleats per panel
+SWAG_SEG, SWAG_SAG, SWAG_OFF = 620.0, 255.0, 1860.0
+SPOT_X, SPOT_Y = 2300.0, -1550.0
+SCONCE_X = 2150.0
+FOOT_X = 1450.0
+EXTRA_ROWS = ()
+PJ_POS = (-560.0, 70.0, -9.4)
 STARS = [(316, 234), (941, 234), (617, 377), (767, 358), (484, 422), (377, 567),
          (989, 623), (950, 697), (903, 713), (426, 1067), (823, 1062), (625, 1129)]
 RING_R = 545.0
@@ -52,6 +63,32 @@ GOLD = np.array([0.86, 0.70, 0.46], np.float32)
 WARM = np.array([1.00, 0.84, 0.60], np.float32)
 VELVET = np.array([0.50, 0.040, 0.070], np.float32)
 SHEEN = np.array([0.95, 0.28, 0.30], np.float32)
+
+
+def configure(layout):
+    """Switch between the 16:9 landscape staging and the 9:16 vertical (Reels) staging."""
+    global LAYOUT, W, H, EW, EH, LOGO_TL_FINAL, PRO_IN, PRO_OUT, PRO_TOP, HEAD_TOP, CURT_OUT, YCEIL
+    global CURT_OPEN, CURT_N, SWAG_SEG, SWAG_SAG, SWAG_OFF, SPOT_X, SPOT_Y, SCONCE_X, FOOT_X, EXTRA_ROWS, PJ_POS, _cz
+    LAYOUT = layout
+    if layout == 'vertical':
+        W, H = 2160, 3840
+        PRO_IN, PRO_OUT = 820.0, 950.0
+        PRO_TOP, HEAD_TOP = -1400.0, -1600.0
+        YCEIL = -2000.0
+        CURT_OUT = PRO_IN + 90.0
+        CURT_OPEN = 700.0
+        CURT_N = 6.0
+        SWAG_SEG, SWAG_SAG, SWAG_OFF = 410.0, 175.0, PRO_IN
+        SPOT_X, SPOT_Y = 900.0, -1700.0
+        SCONCE_X = 1350.0
+        FOOT_X = 725.0
+        EXTRA_ROWS = (4.0, 5.0, 6.0)
+        PJ_POS = (-230.0, 70.0, -7.0)
+        # start closer: the tall frame needs the stage bigger in the opening wide shot
+        _cz = pchip([(0, -10.5), (3, -9.3), (6, -6.2), (10, -2.4), (15.5, 0.0), (16, 0.0), (18, 0.0)])
+    EW, EH = W // ES, H // ES
+    # integer top-left so the emblem's ring centre sits at the frame centre at 1:1
+    LOGO_TL_FINAL = (int(round(W / 2 - LOGO_CX)), int(round(H / 2 - LOGO_CY)))
 
 
 # --------------------------------------------------------------------------
@@ -288,7 +325,7 @@ def surface_light(L, X, Y, Z, front_n=None):
     sl = L.sL * ell_pool(X, Y, -230 * k, -20, 760 * k, 720 * k, 0.12)
     sr = L.sR * ell_pool(X, Y, 230 * k, -20, 760 * k, 720 * k, 0.12)
     pj = L.proj * rect_pool(X, Y, 0, -60, 620 * (Z / ZC) ** 0.6, 452 * (Z / ZC) ** 0.6, 70)
-    ft = L.foot * np.exp(-np.maximum(YS - Y, 0) / 420.0) * (np.abs(X) < 1700)
+    ft = L.foot * np.exp(-np.maximum(YS - Y, 0) / 420.0) * (np.abs(X) < PRO_OUT - 20)
     return sl, sr, pj, ft
 
 
@@ -340,7 +377,7 @@ def render_box(cam, L, img):
     Xp, Yp = X[m4], Y[m4]
     dam = 0.5 + 0.5 * np.sin(Xp / 55.0) * np.sin(Yp / 55.0 + np.sin(Xp / 110.0))
     base = np.array([0.105, 0.026, 0.034], np.float32)
-    lit = 0.30 + 2.6 * stage_glow + 1.6 * L.house * np.exp(-((np.abs(Xp) - 2150) / 320) ** 2 - ((Yp + 420) / 520) ** 2)
+    lit = 0.30 + 2.6 * stage_glow + 1.6 * L.house * np.exp(-((np.abs(Xp) - SCONCE_X) / 320) ** 2 - ((Yp + 420) / 520) ** 2)
     col[m4] = base[None, :] * (lit * (0.88 + 0.12 * dam))[:, None]
     img[:] = col
     return X, Y, Z, m4
@@ -421,7 +458,7 @@ def render_curtains(cam, L, img, t):
     # opening with a lagging, swinging hem
     o = s5(3.45, 6.25, t - 0.32 * v ** 1.6)
     sway = 14.0 * np.sin((t - 3.4) * 2.4 - v * 2.0) * v ** 2 * (t > 3.4) * np.exp(-max(t - 6.2, 0) * 1.1)
-    e_in = -10.0 + 1190.0 * o + sway                     # inner edge |x|
+    e_in = -10.0 + CURT_OPEN * o + sway                     # inner edge |x|
     ax = np.abs(X)
     width = CURT_OUT - e_in
     u = clamp((CURT_OUT - ax) / width)                    # 0 outer .. 1 inner edge
@@ -429,7 +466,7 @@ def render_curtains(cam, L, img, t):
     cover = sstep(e_in - aa, e_in + aa, ax) * (ax < CURT_OUT + 60) * (Y < YS + 2)
     if not cover.any():
         return
-    N = 8.0
+    N = CURT_N
     comp = 1.0 + 1.3 * o                                 # deeper folds when gathered
     ph = 2 * np.pi * N * u + 0.9 * np.sin(2 * np.pi * 1.7 * u + 1.1) + 0.35 * np.sin(2 * np.pi * 4.3 * u + 0.4) + 0.25 * v * np.sin(5 * u)
     hgt = np.sin(ph) + 0.28 * np.sin(2 * ph + 0.8)
@@ -449,7 +486,7 @@ def render_curtains(cam, L, img, t):
     ao = ao * (0.55 + 0.45 * np.sin(np.pi * np.clip(u, 0, 1)) ** 0.5 * (o > 0.5) + 0.45 * (o <= 0.5))
     sheen = (1 - nz) ** 1.3
     nap = 1 + 0.05 * R.nap
-    top_shadow = 0.35 + 0.65 * sstep(-1080, -600, Y)
+    top_shadow = 0.35 + 0.65 * sstep(PRO_TOP + 20, PRO_TOP + 500, Y)
     col = (VELVET[None, None, :] * ((amb + 0.95 * illum) * ao * nap * top_shadow)[..., None] +
            SHEEN[None, None, :] * (0.55 * sheen * (illum + 0.02) * top_shadow)[..., None] +
            np.array([0.30, 0.12, 0.07], np.float32)[None, None, :] * (np.clip(illum - 0.45, 0, None) * ao * top_shadow)[..., None])
@@ -480,9 +517,9 @@ def render_valance(cam, L, img, t):
     gx, gy = R.gx, R.gy
     X, Y = cam.unproj_plane(gx, gy, ZV)
     inside = np.abs(X) < PRO_IN + 5
-    seg = 620.0
-    sx = ((X + 3 * seg) / seg) % 1.0
-    yb = -1060.0 + 255.0 * np.sin(np.pi * sx)
+    seg = SWAG_SEG
+    sx = ((X + SWAG_OFF) / seg) % 1.0
+    yb = PRO_TOP + 40.0 + SWAG_SAG * np.sin(np.pi * sx)
     v = clamp((Y - PRO_TOP) / (yb - PRO_TOP))
     cover = inside & (Y < yb + 1) & (Y > HEAD_TOP)
     fringe = inside & (Y >= yb) & (Y < yb + 48)
@@ -546,8 +583,8 @@ def render_apron(cam, L, img, t):
 def footlights_glow(cam, L, add):
     if L.foot <= 0:
         return
-    for i, xb in enumerate(np.arange(-1450, 1451, 145)):
-        on = float(sstep(3.55 + abs(xb) / 1450 * 0.55, 3.7 + abs(xb) / 1450 * 0.55, L.t))
+    for i, xb in enumerate(np.arange(-FOOT_X, FOOT_X + 1, 145)):
+        on = float(sstep(3.55 + abs(xb) / FOOT_X * 0.55, 3.7 + abs(xb) / FOOT_X * 0.55, L.t))
         if on <= 0:
             continue
         x, y, s = cam.proj(xb, YS - 6, ZA)
@@ -575,7 +612,7 @@ def render_seats(cam, L, t):
     gx, gy = R.gx, R.gy
     layers = []
     rim_l = 0.03 + 0.15 * L.proj + 0.30 * (L.sL + L.sR) / 2
-    for group in ((-5.0, -4.0, -3.0, -2.0), (-1.0, 0.0, 1.0, 2.0, 3.0)):
+    for group in ((-5.0, -4.0, -3.0, -2.0), (-1.0, 0.0, 1.0, 2.0, 3.0) + tuple(EXTRA_ROWS)):
         col = np.zeros((EH, EW, 3), np.float32)
         alpha = np.zeros((EH, EW), np.float32)
         for zr in sorted(group, reverse=True):
@@ -614,7 +651,6 @@ def render_seats(cam, L, t):
 # --------------------------------------------------------------------------
 # Vintage projector (foreground silhouette, opening shot)
 # --------------------------------------------------------------------------
-PJ_POS = (-560.0, 70.0, -9.4)
 
 
 def sd_box(px, py, cx, cy, hx, hy, r=0.0):
@@ -728,10 +764,10 @@ def render_beams(cam, L, t, pj_lens):
         c, I = cone((Sx, Sy), (Tx, Ty), rS, 560.0 * ts, 0.50 * L.proj, [1.0, 0.90, 0.74], haze, hard=0.25, tail=0.05, endfade=0.7)
         add += c; inten += I
     # two golden follow-spots from front-of-house positions
-    for lvl, sx in ((L.sL, -2300.0), (L.sR, 2300.0)):
+    for lvl, sx in ((L.sL, -SPOT_X), (L.sR, SPOT_X)):
         if lvl <= 0:
             continue
-        Sx, Sy, ss = cam.proj(sx, -1550.0, 6.5)
+        Sx, Sy, ss = cam.proj(sx, SPOT_Y, 6.5)
         Tx, Ty, ts = cam.proj(-sx * 0.06, -30.0, ZL)
         c, I = cone((Sx, Sy), (Tx, Ty), 14.0 * ss, 430 * ts, 0.26 * lvl, [1.0, 0.82, 0.55], haze, hard=0.6, tail=0.05)
         add += c; inten += I
@@ -925,7 +961,7 @@ def render_frame(t, debug=False):
                     x, y, s = cam.proj(side * (XWALL - 30), -520.0, zs)
                     splat(glow, x, y, np.array([1.0, 0.72, 0.42]) * L.house, 14 * s, 1.6)
                     splat(glow, x, y, np.array([1.0, 0.6, 0.3]) * L.house, 70 * s, 0.22)
-            x, y, s = cam.proj(side * 2150.0, -470.0, ZP - 0.05)
+            x, y, s = cam.proj(side * SCONCE_X, -470.0, ZP - 0.05)
             splat(glow, x, y, np.array([1.0, 0.72, 0.42]) * L.house, 16 * s, 1.6)
             splat(glow, x, y, np.array([1.0, 0.6, 0.3]) * L.house, 90 * s, 0.25)
     # depth of field on the theatre (far group)
