@@ -8,7 +8,6 @@ An 18-second cinematic logo reveal: a vintage movie theatre, a film projector sw
 |---|---|
 | `PharmNight2026_CinemaSoiree_GrandPremiere_4K.mp4` | Master: 3840×2160, 24 fps, 18.0 s, H.264 + AAC, tagged BT.709 |
 | `PharmNight2026_CinemaSoiree_GrandPremiere_1080p.mp4` | Smaller file for WhatsApp, Instagram, slides and projectors |
-| `PharmNight2026_CinemaSoiree_GrandPremiere_4K_silent.mp4` | 4K with no audio, for editors adding their own music |
 | `PharmNight2026_CinemaSoiree_score.wav` | The synced sound design and score on its own (48 kHz stereo) |
 | `final_frame.png` | Lossless last frame, the hero shot |
 
