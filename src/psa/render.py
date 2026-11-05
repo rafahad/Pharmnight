@@ -60,6 +60,7 @@ def init():
         d = np.min(np.linalg.norm(hull[:, None, :] - np.array(pick)[None], axis=2), 1)
         pick.append(hull[int(np.argmax(d))])
     R.glint_pts = np.array(pick)
+    init_tagline()
     rng = np.random.default_rng(5)
     R.dust = np.stack([rng.uniform(0, W, 38), rng.uniform(0, H, 38), rng.uniform(7, 22, 38),
                        rng.uniform(0.05, 0.14, 38), rng.uniform(0, 100, 38)], 1)
@@ -350,12 +351,10 @@ def render_frame(t):
 
     if t >= TL.T_SETTLE:
         floor_shadow(img, cam, t, 0.0)
-        s = TL.FINAL_SCALE
-        n = int(round(2000 * s))
-        sm = cv2.resize(R.pm, (n, n), interpolation=cv2.INTER_AREA)
-        x0, y0 = int(round(W / 2 - n / 2)), int(round(1920 - n / 2))
+        n, x0, y0 = R.final_n, R.final_x0, R.final_y0
         reg = img[y0:y0 + n, x0:x0 + n]
-        reg[:] = sm[..., :3] + reg * (1 - sm[..., 3:4])
+        reg[:] = R.final_pm[..., :3] + reg * (1 - R.final_pm[..., 3:4])
+        draw_tagline(img, t)
         return to_u8(img)
 
     canvas, flying = settled_canvas(t)
@@ -416,7 +415,7 @@ def floor_shadow(img, cam, t, bob):
     sc = cam['scale']
     lift = -bob / 14.0 if bob else 0.0                   # -1..1
     yb = cam['cy'] + sc * 1000.0                          # bottom of the crest
-    cy = yb + sc * 165.0
+    cy = yb + sc * TL.shadow_offset(t)
     rx = sc * 760.0 * (1 - 0.05 * lift)
     ry = sc * 70.0
     x0, x1 = int(max(W / 2 - rx * 2, 0)), int(min(W / 2 + rx * 2, W))
@@ -431,3 +430,67 @@ def floor_shadow(img, cam, t, bob):
 
 def to_u8(img):
     return np.clip(np.round(img * 255.0), 0, 255).astype(np.uint8)
+
+
+# ---------------------------------------------------------------- motto (final hold)
+def init_tagline():
+    from PIL import Image, ImageDraw, ImageFont
+    root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    font = ImageFont.truetype(os.path.join(root, 'assets', 'fonts', 'Cinzel-Bold.ttf'), TL.TAG_FONT_PX)
+    maroon = tuple(int(round(v * 255)) for v in np.median(R.col[R.field & ~R.sym], axis=0))   # the crest's own maroon
+    silver = (150, 152, 158)
+    track = TL.TAG_TRACK * TL.TAG_FONT_PX
+    space = font.getlength(' ') + track
+    pieces, x = [], 0.0
+    for k, (txt, t0) in enumerate(TL.TAGLINE):
+        if k:
+            x += space
+        w = sum(font.getlength(c) for c in txt) + track * (len(txt) - 1)
+        img = Image.new('L', (int(math.ceil(w)) + 8, TL.TAG_FONT_PX + 40), 0)
+        d = ImageDraw.Draw(img)
+        cx = 4.0
+        for c in txt:
+            d.text((cx, 10), c, font=font, fill=255)
+            cx += font.getlength(c) + track
+        a = np.asarray(img, np.float32) / 255.0
+        col = np.array(silver if txt == '|' else maroon, np.float32) / 255.0
+        pieces.append(dict(a=a, col=col, x=x, t0=t0, sep=(txt == '|')))
+        x += w
+    total = x
+    s = TL.FINAL_SCALE
+    n = int(round(2000 * s))
+    R.final_n = n
+    R.final_x0 = int(round(W / 2 - n / 2))
+    R.final_y0 = int(round(TL.FINAL_CY - n / 2))
+    up = cv2.INTER_LANCZOS4 if s > 1 else cv2.INTER_AREA
+    R.final_pm = np.clip(cv2.resize(R.pm, (n, n), interpolation=up), 0, 1)
+    R.final_pm[..., :3] = np.minimum(R.final_pm[..., :3], R.final_pm[..., 3:4])
+    crest_bottom = TL.FINAL_CY + s * (1963 - 1000)
+    R.tag_y = crest_bottom + 120                     # top of the text box
+    R.tag_x0 = W / 2 - total / 2
+    R.tag = pieces
+
+
+def draw_tagline(img, t):
+    for p in R.tag:
+        u = TL.clamp((t - p['t0']) / TL.TAG_ANIM)
+        if u <= 0:
+            continue
+        e = TL.ease_out_cubic(u)
+        a = p['a'] * TL.clamp(u * 1.6)
+        h, w = a.shape
+        if p['sep']:
+            sy = 0.15 + 0.85 * e                        # separators grow from the centre line
+            a = cv2.resize(a, (w, max(int(h * sy), 1)), interpolation=cv2.INTER_AREA)
+            dy = (h - a.shape[0]) / 2
+        else:
+            dy = 30.0 * (1 - e)                          # words rise into place
+        x = R.tag_x0 + p['x']
+        y = R.tag_y + dy
+        x0, y0 = int(math.floor(x)), int(math.floor(y))
+        M = np.float32([[1, 0, x - x0], [0, 1, y - y0]])
+        hh, ww = a.shape
+        a = cv2.warpAffine(a, M, (ww + 1, hh + 1), flags=cv2.INTER_LINEAR)
+        reg = img[y0:y0 + a.shape[0], x0:x0 + a.shape[1]]
+        a = a[:reg.shape[0], :reg.shape[1], None]
+        reg[:] = reg * (1 - a) + p['col'] * a

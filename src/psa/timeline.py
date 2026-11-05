@@ -19,7 +19,7 @@ import math
 import numpy as np
 
 FPS = 60
-DUR = 16.0
+DUR = 17.0
 NF = int(round(FPS * DUR))
 W, H = 2160, 3840
 
@@ -90,17 +90,18 @@ _CAM = {
           (8.6,   0.80,   0.0, -3.0,  0.0, 1840),
           (11.0,  0.82,   7.0, -4.0,  0.0, 1840),
           (12.6,  0.99,  18.0, -5.0,  0.0, 1890),
-          (13.6,  0.98, -11.0, -2.0,  0.0, 1910),
-          (T_SETTLE, 0.96, 0.0,  0.0,  0.0, 1920),
-          (DUR,   0.96,   0.0,  0.0,  0.0, 1920)],
+          (13.6,  1.02, -11.0, -2.0,  0.0, 1760),
+          (T_SETTLE, 1.08, 0.0,  0.0,  0.0, 1620),
+          (DUR,   1.08,   0.0,  0.0,  0.0, 1620)],
 }
 _cam_f = [pchip([(k[0], k[j]) for k in _CAM['k']]) for j in range(1, 6)]
-FINAL_SCALE = 0.96
+FINAL_SCALE = 1.08
+FINAL_CY = 1620.0      # crest raised so the motto sits above the Reels/TikTok caption zone
 
 
 def camera(t):
     if t >= T_SETTLE:
-        return dict(scale=FINAL_SCALE, yaw=0.0, pitch=0.0, roll=0.0, cy=1920.0)
+        return dict(scale=FINAL_SCALE, yaw=0.0, pitch=0.0, roll=0.0, cy=FINAL_CY)
     s, yaw, pitch, roll, cy = [f(t) for f in _cam_f]
     return dict(scale=s, yaw=yaw, pitch=pitch, roll=roll, cy=cy)
 
@@ -174,3 +175,15 @@ def letter_schedule(kinds, centres):
 
 GLINTS = [8.95, 9.35, 9.85, 10.35, 10.75, 12.95, 13.4, 13.95]
 GLOSS = [(9.15, 10.25), (11.15, 12.45), (13.0, 14.0)]
+
+
+# ---------------------------------------------------------------- motto under the crest (final hold)
+TAGLINE = [('DUCATUS', 14.78), ('|', 15.00), ('SCIENTIA', 15.10), ('|', 15.32), ('MINISTERIUM', 15.42)]
+TAG_ANIM = 0.55
+TAG_FONT_PX = 88
+TAG_TRACK = 0.08          # letter-spacing in em
+
+
+def shadow_offset(t):
+    """distance (logo px) from the crest's bottom to its floor shadow; opens up to make room for the motto."""
+    return 165.0 + 135.0 * s5(13.6, T_SETTLE, t)

@@ -261,6 +261,17 @@ add(thump(32, 3.5, 0.5, 0.9), TL.T_SETTLE, 0.7, 0.0)
 for m, p in ((62, -0.3), (66, 0.0), (69, 0.3), (74, 0.1), (76, -0.1)):
     add(bell(midi(m), 3.0), TL.T_SETTLE + 0.02, 0.05, p)
 
+# 11) motto: each word rises with a soft tick + rising chime; separators get a lighter tick
+word_notes = iter([81, 86, 90])
+for txt, t0 in TL.TAGLINE:
+    if txt == '|':
+        add(tick(4200, 0.08, 0.15), t0 + 0.08, 0.05, 0.0)
+        continue
+    pan = {'DUCATUS': -0.45, 'SCIENTIA': 0.0, 'MINISTERIUM': 0.45}[txt]
+    add(whoosh(0.35, 1500, 6000, 0.9), t0, 0.03, pan)
+    add(tick(2600, 0.12, 0.3), t0 + 0.2, 0.08, pan)
+    add(bell(midi(next(word_notes)), 2.2), t0 + 0.2, 0.05, pan)
+
 # ================================================================ music (original)
 # pulse ostinato under the build (D minor, 120 bpm eighths), growing into the impact
 bt = 0.25
@@ -278,7 +289,7 @@ for i in range(int((TL.T_COMPLETE - 3.0) / bt)):
 pad([50, 57, 62, 65, 69], 8.0, 2.6, 0.22, att=0.8)            # Dm9 colour
 pad([46, 53, 58, 62, 69], 10.6, 2.0, 0.22, att=0.6)           # Bbmaj7
 pad([43, 50, 58, 62, 67], 12.6, 2.0, 0.24, att=0.5)           # Gm
-pad([38, 45, 50, 54, 57, 64], TL.T_SETTLE, 1.5, 0.32, att=0.08, rel=1.0)   # D major add9 — resolve
+pad([38, 45, 50, 54, 57, 64], TL.T_SETTLE, TL.DUR - TL.T_SETTLE - 0.6, 0.32, att=0.08, rel=1.0)   # D major add9 — resolve
 
 # ================================================================ mix
 def reverb(x, seed, secs):

@@ -69,7 +69,7 @@ python3 src/preview.py 3.6,6.0,12,17 preview.jpg   # quick contact sheet of chos
 
 # PSA — Pharmacy Student Association crest intro (9:16)
 
-A 16-second vertical (2160×3840, 60 fps) intro for the official PSA crest. It follows the choreography of the reference animation the club provided. Only the motion was used from that video: none of its logo, branding, text, watermark, outro or audio appears.
+A 17-second vertical (2160×3840, 60 fps) intro for the official PSA crest. It follows the choreography of the reference animation the club provided. Only the motion was used from that video: none of its logo, branding, text, watermark, outro or audio appears.
 
 ## Deliverables (`output/psa_intro_9x16/`)
 
@@ -94,8 +94,9 @@ A 16-second vertical (2160×3840, 60 fps) intro for the official PSA crest. It f
 | 7.8–8.6 s | camera pulls back and the emblem floats above the floor | same, with a soft floor shadow |
 | 8.6–11 s | floating, glints, dust | same, plus a gloss sweep |
 | 11–12.6 s | push-in with a 3-D turn | same |
-| 12.6–14.6 s | hero sway | same, then settles front-on |
-| 14.6–16 s | — (the reference cuts to a TikTok outro here) | a still, front-on hold of the full crest |
+| 12.6–14.6 s | hero sway | same, then the crest settles front-on and large, filling about 91% of the frame width |
+| 14.8–15.9 s | — (the reference cuts to a TikTok outro here) | the motto **DUCATUS \| SCIENTIA \| MINISTERIUM** rises in under the crest, word by word |
+| 15.9–17 s | — | still hold of the crest and motto |
 
 ## Logo integrity
 
@@ -103,7 +104,8 @@ A 16-second vertical (2160×3840, 60 fps) intro for the official PSA crest. It f
 * The motion is perspective transforms of those original layers, like a printed acrylic slab seen by a moving camera. Depth uses darkened copies of the crest's own colours. No new artwork, lettering or colours are introduced.
 * The white backdrop is removed. Enclosed white areas that are part of the design (the shield's white border and the capsules) are kept, and holes (inside letters, gaps beside the scrolls) become transparent.
 * The only temporary non-original pixels are a flat fill of the field's own median maroon under the symbols while they rise. The finished symbols cover it completely.
-* For the final hold (14.6–16 s), the original is placed front-on with a single high-quality downscale (0.96×) and nothing on top.
+* For the final hold (14.6–17 s), the original is placed front-on with a single high-quality resample (1.08×) and nothing on top. It is raised slightly so the motto below it stays above the TikTok/Reels caption zone.
+* The motto is new text set in Cinzel Bold (SIL Open Font License, see `assets/fonts/`). The words are in the crest's own maroon, sampled from the shield, and the separators are silver. It sits under the crest and never on it.
 
 ## Sound design
 
@@ -115,12 +117,13 @@ Everything is synthesised from scratch in `src/psa/audio.py`. The sound uses the
 * a riser leads into a sub-bass and metallic impact when the crest completes, and a pull-back whoosh follows
 * glints get chimes, and the gloss sweeps get shimmer
 * the final settle has a soft lock, a low boom and a bell chord
+* each word of the motto gets a soft tick and a rising chime
 
 An original pulse-and-pad score runs underneath.
 
 ```bash
 python3 src/psa/assets.py        # build layers from the original crest
-python3 src/psa/render_all.py    # 960 frames → build_psa/
+python3 src/psa/render_all.py    # 1020 frames → build_psa/
 bash src/psa/encode.sh           # deliverables → output/psa_intro_9x16/
 python3 src/psa/preview.py 1.4,3.6,6.9,9.6 sheet.jpg
 ```

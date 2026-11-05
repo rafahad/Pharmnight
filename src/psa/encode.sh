@@ -18,7 +18,7 @@ enc () {  # $1 scale prefix, $2 Mbps, $3 level, $4 out
   ffmpeg -y -loglevel error -f concat -safe 0 -i $B/segments.txt -i $B/psa_score_norm.wav -vf "$VF" $X \
     -pass 2 -passlogfile $B/x264_$3 -c:a aac -b:a 320k -ar 48000 -shortest -movflags +faststart "$4"
 }
-enc "" 44 5.2 "$O/PSA_Crest_Intro_2160x3840_60fps.mp4" &
+enc "" 42 5.2 "$O/PSA_Crest_Intro_2160x3840_60fps.mp4" &
 enc "scale=1080:1920:flags=lanczos," 16 4.2 "$O/PSA_Crest_Intro_1080x1920_60fps.mp4" &
 wait
 ffmpeg -y -loglevel error -i "$O/PSA_Crest_Intro_1080x1920_60fps.mp4" -map 0:v -c:v copy -an -movflags +faststart "$O/PSA_Crest_Intro_1080x1920_60fps_MUTED.mp4"
