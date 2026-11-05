@@ -64,3 +64,63 @@ python3 src/preview.py 3.6,6.0,12,17 preview.jpg   # quick contact sheet of chos
 
 * `src/cinema.py`: the scene (camera, theatre, curtains, lights, projector, dust, film strip, emblem compositing)
 * `src/audio.py`: procedural score (string pad, harp glissando, bells, projector, spotlight and curtain sound effects)
+
+---
+
+# PSA — Pharmacy Student Association crest intro (9:16)
+
+A 16-second vertical (2160×3840, 60 fps) intro for the official PSA crest. It follows the choreography of the reference animation the club provided. Only the motion was used from that video: none of its logo, branding, text, watermark, outro or audio appears.
+
+## Deliverables (`output/psa_intro_9x16/`)
+
+| File | Use |
+|---|---|
+| `PSA_Crest_Intro_1080x1920_60fps.mp4` | **For TikTok and Reels uploads.** 1080×1920, 60 fps, with the original sound design (−14 LUFS) |
+| `PSA_Crest_Intro_1080x1920_60fps_MUTED.mp4` | The same picture without sound |
+| `PSA_Crest_Intro_2160x3840_60fps.mp4` | 4K vertical master |
+| `PSA_Crest_Intro_sound_design.wav` | The sound design on its own |
+| `final_frame.png` | Lossless last frame |
+
+## Beat sheet (matched to the reference's sequence)
+
+| Time | Reference beat | PSA version |
+|---|---|---|
+| 0.0–2.4 s | pieces fly in and snap into the outline on a light-grey wall | 38 fragments cut from the crest's own frame and side scrolls fly in, spin and lock in place, with soft wall shadows and an angled camera |
+| 2.4–3.0 s | outline holds, camera drifts | same |
+| 3.0–3.85 s | centre fills in like an iris | the maroon shield field closes in as 10 converging wedges |
+| 3.95–5.55 s | central figure rises from the base | the hands, capsule, leaves, arcs, XXIII XXIV and Arabic lettering rise from the base upward |
+| 5.65–7.7 s | lettering appears piece by piece | the grey banner unrolls, then EST 2011, PHARMACY, the dots and dashes, and STUDENT ASSOCIATION appear letter by letter |
+| 7.72 s | crest complete | impact |
+| 7.8–8.6 s | camera pulls back and the emblem floats above the floor | same, with a soft floor shadow |
+| 8.6–11 s | floating, glints, dust | same, plus a gloss sweep |
+| 11–12.6 s | push-in with a 3-D turn | same |
+| 12.6–14.6 s | hero sway | same, then settles front-on |
+| 14.6–16 s | — (the reference cuts to a TikTok outro here) | a still, front-on hold of the full crest |
+
+## Logo integrity
+
+* Every pixel of the crest comes from `assets/psa_logo_original.webp`. `src/psa/assets.py` only **masks** the original into layers (fragments, wedges, symbols, banner, letters). Recomposited, the layers match the original exactly: 0 of 2,087,481 solid pixels differ.
+* The motion is perspective transforms of those original layers, like a printed acrylic slab seen by a moving camera. Depth uses darkened copies of the crest's own colours. No new artwork, lettering or colours are introduced.
+* The white backdrop is removed. Enclosed white areas that are part of the design (the shield's white border and the capsules) are kept, and holes (inside letters, gaps beside the scrolls) become transparent.
+* The only temporary non-original pixels are a flat fill of the field's own median maroon under the symbols while they rise. The finished symbols cover it completely.
+* For the final hold (14.6–16 s), the original is placed front-on with a single high-quality downscale (0.96×) and nothing on top.
+
+## Sound design
+
+Everything is synthesised from scratch in `src/psa/audio.py`. The sound uses the same schedules as the renderer, so it lines up with the picture:
+* each fragment has its own flight whoosh and a metallic lock tick, panned to where it lands
+* the iris has a servo whine and an accelerating ratchet, then a heavy lock
+* the symbols rise with a hydraulic hiss and motor hum, ending in a pneumatic release
+* the banner slides left to right, and each letter has its own tick
+* a riser leads into a sub-bass and metallic impact when the crest completes, and a pull-back whoosh follows
+* glints get chimes, and the gloss sweeps get shimmer
+* the final settle has a soft lock, a low boom and a bell chord
+
+An original pulse-and-pad score runs underneath.
+
+```bash
+python3 src/psa/assets.py        # build layers from the original crest
+python3 src/psa/render_all.py    # 960 frames → build_psa/
+bash src/psa/encode.sh           # deliverables → output/psa_intro_9x16/
+python3 src/psa/preview.py 1.4,3.6,6.9,9.6 sheet.jpg
+```
