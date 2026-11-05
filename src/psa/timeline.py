@@ -99,11 +99,31 @@ FINAL_SCALE = 1.08
 FINAL_CY = 1620.0      # crest raised so the motto sits above the Reels/TikTok caption zone
 
 
+# heavy hits (time, strength): the camera jolts and the sound design lands its biggest impacts here
+T_OUTLINE = 2.17         # last outline fragment locks
+T_IRIS = 3.845           # last field wedge locks
+HITS = [(T_OUTLINE, 0.55), (T_IRIS, 0.8), (5.55, 0.45), (7.72, 1.0)]
+
+
+def shake(t):
+    """(dx, dy, droll) camera jolt in screen px / degrees: fast decaying, never in the final hold."""
+    dx = dy = dr = 0.0
+    for th, a in HITS:
+        u = t - th
+        if 0 <= u < 0.6:
+            env = a * math.exp(-u / 0.13)
+            dx += 26 * env * math.sin(2 * math.pi * 17 * u + th)
+            dy += 34 * env * math.sin(2 * math.pi * 13 * u + 1.3 + th)
+            dr += 0.45 * env * math.sin(2 * math.pi * 11 * u + 2.1)
+    return dx, dy, dr
+
+
 def camera(t):
     if t >= T_SETTLE:
-        return dict(scale=FINAL_SCALE, yaw=0.0, pitch=0.0, roll=0.0, cy=FINAL_CY)
+        return dict(scale=FINAL_SCALE, yaw=0.0, pitch=0.0, roll=0.0, cx=W / 2, cy=FINAL_CY)
     s, yaw, pitch, roll, cy = [f(t) for f in _cam_f]
-    return dict(scale=s, yaw=yaw, pitch=pitch, roll=roll, cy=cy)
+    dx, dy, dr = shake(t)
+    return dict(scale=s, yaw=yaw, pitch=pitch, roll=roll + dr, cx=W / 2 + dx, cy=cy + dy)
 
 
 def bob(t):

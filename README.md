@@ -98,28 +98,37 @@ A 17-second vertical (2160×3840, 60 fps) intro for the official PSA crest. It f
 | 14.8–15.9 s | — (the reference cuts to a TikTok outro here) | the motto **DUCATUS \| SCIENTIA \| MINISTERIUM** rises in under the crest, word by word |
 | 15.9–17 s | — | still hold of the crest and motto |
 
+## Look
+
+* **Studio:** mid-grey with soft light falloff, faint volumetric haze, two overhead light beams, a floor shadow and a soft floor reflection.
+* **Metal badge crest:** lighting is added on top of the original artwork. A height map built from the crest's own colour regions bevels every boundary and rounds the outer edge:
+  * the silver frame, scrolls and hands are raised, polished brushed metal, with reflections that slide as the camera turns
+  * the maroon field is recessed glossy enamel
+  * the white and black areas are glossy enamel
+  * the beige Arabic lettering and arcs are gold
+  * creases get ambient-occlusion shading, and the badge has an extruded side wall
+  Flat areas keep their original colour; the lighting mostly shows on edges and highlights. The realistic lighting stays on in the final hold, as requested.
+* **Motto:** DUCATUS | SCIENTIA | MINISTERIUM in brushed-silver Cinzel Bold, with a bevel, a thin dark rim and a drop shadow.
+* **Camera:** short camera shakes on the heavy hits (outline slam, iris lock, symbol release and crest complete). The final hold is rock-steady.
+
 ## Logo integrity
 
-* Every pixel of the crest comes from `assets/psa_logo_original.webp`. `src/psa/assets.py` only **masks** the original into layers (fragments, wedges, symbols, banner, letters). Recomposited, the layers match the original exactly: 0 of 2,087,481 solid pixels differ.
-* The motion is perspective transforms of those original layers, like a printed acrylic slab seen by a moving camera. Depth uses darkened copies of the crest's own colours. No new artwork, lettering or colours are introduced.
+* The crest's artwork always comes from `assets/psa_logo_original.webp`. `src/psa/assets.py` only **masks** the original into layers (fragments, wedges, symbols, banner, letters). Recomposited, the layers match the original exactly: 0 of 2,087,481 solid pixels differ.
+* Nothing is redrawn and no new artwork or lettering is added to the crest. The metal and enamel look comes only from lighting and shading applied on top.
 * The white backdrop is removed. Enclosed white areas that are part of the design (the shield's white border and the capsules) are kept, and holes (inside letters, gaps beside the scrolls) become transparent.
-* The only temporary non-original pixels are a flat fill of the field's own median maroon under the symbols while they rise. The finished symbols cover it completely.
-* For the final hold (14.6–17 s), the original is placed front-on with a single high-quality resample (1.08×) and nothing on top. It is raised slightly so the motto below it stays above the TikTok/Reels caption zone.
-* The motto is new text set in Cinzel Bold (SIL Open Font License, see `assets/fonts/`). The words are in the crest's own maroon, sampled from the shield, and the separators are silver. It sits under the crest and never on it.
+* While the symbols rise, a flat fill of the field's own median maroon sits under them temporarily. The finished symbols cover it completely.
 
-## Sound design
+## Sound design (epic trailer)
 
-Everything is synthesised from scratch in `src/psa/audio.py`. The sound uses the same schedules as the renderer, so it lines up with the picture:
-* each fragment has its own flight whoosh and a metallic lock tick, panned to where it lands
-* the iris has a servo whine and an accelerating ratchet, then a heavy lock
-* the symbols rise with a hydraulic hiss and motor hum, ending in a pneumatic release
-* the banner slides left to right, and each letter has its own tick
-* a riser leads into a sub-bass and metallic impact when the crest completes, and a pull-back whoosh follows
-* glints get chimes, and the gloss sweeps get shimmer
-* the final settle has a soft lock, a low boom and a bell chord
-* each word of the motto gets a soft tick and a rising chime
-
-An original pulse-and-pad score runs underneath.
+Everything is synthesised from scratch in `src/psa/audio.py`, with no samples and nothing taken from the reference. It is driven by the same schedules as the picture:
+* **Opening:** a dark low drone and air. The fragments fly in on a deep swirling whoosh and lock with a dense metallic rattle, then an outline slam (sub drop, low tom, dark metal).
+* **Iris:** a heavy servo grind and ratchet, then a big lock hit with a braam.
+* **Symbols:** they rise on hydraulic pressure and a rising rumble, ending in a pneumatic release and a clank.
+* **Lettering:** the banner slides in, and the letters stamp in as muted thuds (heavier for PHARMACY).
+* **Crest complete:** a riser leads into the main trailer hit (sub drop, braam, low tom, crack and dark metal), followed by deep camera whooshes.
+* **Finale:** a riser leads into the settle, then three trailer title hits on DUCATUS, SCIENTIA and MINISTERIUM, the last one the biggest.
+* **Score:** an original D-minor low-string ostinato with taiko drums that builds twice, sustained dark strings while the crest floats, and a final low strings-and-brass chord.
+* **Mastering:** a hall reverb per bus and soft limiting, then the encode normalises to −14 LUFS.
 
 ```bash
 python3 src/psa/assets.py        # build layers from the original crest
