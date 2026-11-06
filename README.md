@@ -136,3 +136,57 @@ python3 src/psa/render_all.py    # 1020 frames → build_psa/
 bash src/psa/encode.sh           # deliverables → output/psa_intro_9x16/
 python3 src/psa/preview.py 1.4,3.6,6.9,9.6 sheet.jpg
 ```
+
+---
+
+# PSA — clean premium assembly on white (9:16, 10 s)
+
+A 10-second vertical intro (2160×3840, 60 fps) that follows the second reference animation and the brief "clean, elegant opening on a white background". Only motion and timing were taken from the reference: none of its logo, text, watermark, TikTok outro or audio appears.
+
+## Deliverables (`output/psa_white_10s/`)
+
+| File | Use |
+|---|---|
+| `PSA_White_Reveal_1080x1920_60fps.mp4` | **For TikTok and Reels uploads.** With sound, −14 LUFS |
+| `PSA_White_Reveal_1080x1920_60fps_MUTED.mp4` | The same picture without sound |
+| `PSA_White_Reveal_2160x3840_60fps.mp4` | 4K vertical master |
+| `PSA_White_Reveal_sound_design.wav` | The sound on its own |
+| `final_frame.png` | Lossless last frame |
+
+## Build order (inside out, as in the reference)
+
+| Time | What happens |
+|---|---|
+| 0.15–0.85 s | the maroon shield field pops up from the centre (the icon's base) |
+| 0.6–2.3 s | the hands rise, then the capsule and leaves pop in, the outer arc draws around, XXIII XXIV appears, and the Arabic letters arrive right to left |
+| 1.85–2.75 s | the silver and white frame sweeps clockwise around the shield |
+| 2.45–3.7 s | the four scroll ornaments glide in from outside |
+| 3.5–6.05 s | EST 2011, then PHARMACY, then the banner, dots, dashes and STUDENT ASSOCIATION, letter by letter |
+| 6.05 s | complete: a gentle pulse |
+| 6.05–9.6 s | slight float, soft push-in, subtle tilt and depth separation between the scrolls, the shield and the lettering, a shimmer sweep, then sparkle glints at the edge points and travelling along the outline |
+| 9.6–10 s | a clean, front-on, still hold |
+
+## Look
+
+* **Studio:** clean white with soft falloff and soft shadows. The crest sits slightly raised off the wall, as in the reference.
+* **Crest:** lit as a cast-metal badge at the client's request ("ultra realistic, mature"). The silver frame and scrolls are brushed metal, the maroon and white are clear-coated enamel with a soft studio highlight and window reflection, the beige details read as gold, and the edges are bevelled with an extruded side wall.
+* **Artwork:** this is all lighting on top of the original. The layers recomposite the original artwork exactly, and no lettering, symbols or shapes are changed or added.
+
+## Sound
+
+Everything is synthesised from scratch in `src/psa_white/audio.py` and timed from the renderer's element schedule:
+* **Opening:** a deep soft boom as the shield appears, then muted thumps as the symbols pop in.
+* **Arcs and lettering:** airy sweeps for the arcs, and a swish that travels right to left with the Arabic letters.
+* **Frame:** a circular whoosh that pans with the frame sweep, ending in a firm lock.
+* **Scrolls:** whooshes panned to each side, landing on soft thuds.
+* **Letters:** soft texture ticks, heavier for PHARMACY.
+* **Reveal:** a reverse-cymbal rise into the reveal boom with a soft braam.
+* **Finish:** an airy shimmer for the shimmer sweep and filtered-noise sparkles for the glints. There are no tonal pings.
+* **Score:** a warm string progression (Bm, G, A, then D add9 at the reveal) over a low pulse.
+
+```bash
+python3 src/psa_white/layers.py      # frame / ornament / symbol split
+python3 src/psa_white/render_all.py  # 600 frames → build_psa_white/
+bash src/psa_white/encode.sh         # deliverables → output/psa_white_10s/
+python3 src/psa_white/preview.py 1,3,5,7,9.9 sheet.jpg
+```

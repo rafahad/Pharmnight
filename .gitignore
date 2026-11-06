@@ -3,3 +3,4 @@ __pycache__/
 *.pyc
 build_vertical/
 build_psa/
+build_psa_white/
