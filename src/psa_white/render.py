@@ -29,7 +29,10 @@ DUR = 10.0
 NF = int(FPS * DUR)
 T_COMPLETE = 6.05
 T_CLEAN = 9.6                               # from here on: front-on, no glints, exact layout
-FINAL_SCALE = 0.96
+FINAL_SCALE = 0.92
+CAM_CY = 1760.0                              # crest raised so the motto clears the Reels/TikTok caption zone
+MOTTO = [('DUCATUS', 6.25), ('|', 6.47), ('SCIENTIA', 6.57), ('|', 6.79), ('MINISTERIUM', 6.89)]
+MOTTO_ANIM = 0.55
 
 s5, sstep, clamp, bump = PT.s5, PT.sstep, PT.clamp, PT.bump
 ease_out = PT.ease_out_cubic
@@ -42,13 +45,13 @@ class R:
 
 _cam = [PT.pchip([(k[0], k[j]) for k in [
     #  t     scale  yaw   pitch
-    (0.0,  0.84, -7.0,  6.0),
-    (3.0,  0.86, -3.0,  3.0),
-    (T_COMPLETE, 0.87, 0.0, 0.0),
-    (7.0,  0.89,  3.0, -1.5),
-    (8.3,  0.93, -3.0,  1.0),
-    (T_CLEAN, 0.96, 0.0, 0.0),
-    (DUR,  0.96,  0.0,  0.0)]]) for j in (1, 2, 3)]
+    (0.0,  0.81, -7.0,  6.0),
+    (3.0,  0.83, -3.0,  3.0),
+    (T_COMPLETE, 0.84, 0.0, 0.0),
+    (7.0,  0.86,  3.0, -1.5),
+    (8.3,  0.89, -3.0,  1.0),
+    (T_CLEAN, FINAL_SCALE, 0.0, 0.0),
+    (DUR,  FINAL_SCALE,  0.0,  0.0)]]) for j in (1, 2, 3)]
 
 
 def camera(t):
@@ -58,7 +61,7 @@ def camera(t):
         s, yaw, pitch = [f(t) for f in _cam]
     pulse = 1 + 0.022 * math.sin(math.pi * clamp((t - T_COMPLETE) / 0.6)) ** 2 if t > T_COMPLETE else 1.0
     bob = -10.0 * math.sin(2 * math.pi * (t - T_COMPLETE) / 2.4) * bump(t, T_COMPLETE, 6.7, 9.0, T_CLEAN)
-    cam = dict(scale=s * pulse, yaw=yaw, pitch=pitch, roll=0.0, cx=W / 2, cy=H / 2)
+    cam = dict(scale=s * pulse, yaw=yaw, pitch=pitch, roll=0.0, cx=W / 2, cy=CAM_CY)
     cam['R'] = PR.rot_matrix(yaw, pitch, 0.0)
     return cam, bob
 
@@ -172,6 +175,7 @@ def init():
     R.glints = np.array(pick, np.float32)
     R.gy = np.arange(H, dtype=np.float32)[:, None]
     R.gx = np.arange(W, dtype=np.float32)[None, :]
+    init_motto()
 
 
 # ---------------------------------------------------------------- element states
@@ -311,6 +315,7 @@ def render_frame(t):
         R.fpm = np.dstack([flit * R.fld[..., None], R.fld.astype(np.float32)]).astype(np.float32)
     img = background()
     cans, free = group_canvases(t)
+    motto = motto_pieces(t)
     dz = depth(t)
     zs = {'orn': -dz, 'shield': 0.0, 'text': dz}
 
@@ -321,7 +326,7 @@ def render_frame(t):
     for off, sig, op in ((34.0, 16.0, 0.26), (10.0, 4.0, 0.20)):
         sh = np.zeros((H // 2, W // 2), np.float32)
         PR.warp_alpha_add(sh, a_small, half @ PR.hcam(cam, -40.0, bob) @ PR.T(0, off) @ np.diag([4, 4, 1.0]), 1.0)
-        for g, o, fx, fy in free:
+        for g, o, fx, fy in free + motto:
             PR.warp_alpha_add(sh, np.ascontiguousarray(o[..., 3]), half @ PR.hcam(cam, -40.0, bob) @ PR.T(fx, fy + off * 1.6), 1.0)
         sh = cv2.resize(cv2.GaussianBlur(sh, (0, 0), sig), (W, H), interpolation=cv2.INTER_LINEAR)
         img *= (1 - op * sh)[..., None]
@@ -340,6 +345,10 @@ def render_frame(t):
                 for i in (5, 4, 3, 2, 1):
                     PR.warp_over(buf, o, PR.hcam(cam, zs[g] - 18.0 * i / 5, bob) @ PR.T(fx, fy), shade=0.28 + 0.32 * (1 - i / 5) ** 2, scale_hint=sc)
                 PR.warp_over(buf, o, PR.hcam(cam, zs[g], bob) @ PR.T(fx, fy), scale_hint=sc)
+    for _, o, fx, fy in motto:                                   # motto travels with the lettering layer
+        for i in (3, 2, 1):
+            PR.warp_over(buf, o, PR.hcam(cam, zs['text'] - 7.0 * i / 3 * (thick > 0.5), bob) @ PR.T(fx, fy), shade=0.35 + 0.1 * (3 - i), scale_hint=sc)
+        PR.warp_over(buf, o, PR.hcam(cam, zs['text'], bob) @ PR.T(fx, fy), scale_hint=sc)
     img *= (1 - buf[..., 3:4])
     img += buf[..., :3]
 
@@ -358,3 +367,66 @@ def render_frame(t):
             p = PR.hcam(cam, 2.0, bob) @ np.array([u, v, 1.0])
             PR.flare(img, p[0] / p[2], p[1] / p[2], 150 * sc, 0.75 * math.sin(math.pi * clamp(k)) ** 1.5)
     return np.clip(np.round(img * 255), 0, 255).astype(np.uint8)
+
+
+# ---------------------------------------------------------------- motto: DUCATUS | SCIENTIA | MINISTERIUM
+def init_motto():
+    """Brushed gunmetal lettering (Cinzel Bold, OFL) in logo units, centred under the crest."""
+    from PIL import Image, ImageDraw, ImageFont
+    root = os.path.dirname(os.path.dirname(HERE))
+    fpx = 84
+    font = ImageFont.truetype(os.path.join(root, 'assets', 'fonts', 'Cinzel-Bold.ttf'), fpx)
+    track = 0.08 * fpx
+    space = font.getlength(' ') + track
+    L = PR.LIGHT
+    hv = (L + [0, 0, 1]) / np.linalg.norm(L + [0, 0, 1])
+    rng = np.random.default_rng(9)
+    pieces, x = [], 0.0
+    for k, (txt, t0) in enumerate(MOTTO):
+        if k:
+            x += space
+        w = sum(font.getlength(c) for c in txt) + track * (len(txt) - 1)
+        im = Image.new('L', (int(math.ceil(w)) + 16, fpx + 48), 0)
+        d = ImageDraw.Draw(im)
+        cx = 8.0
+        for c in txt:
+            d.text((cx, 14), c, font=font, fill=255)
+            cx += font.getlength(c) + track
+        a = np.asarray(im, np.float32) / 255.0
+        hgt = cv2.GaussianBlur(np.clip(cv2.distanceTransform((a > 0.5).astype(np.uint8), cv2.DIST_L2, 3) / 4.0, 0, 1), (0, 0), 1.0)
+        gx = cv2.Sobel(hgt, cv2.CV_32F, 1, 0, ksize=3) / 8.0 * 5
+        gy = cv2.Sobel(hgt, cv2.CV_32F, 0, 1, ksize=3) / 8.0 * 5
+        nz = 1 / np.sqrt(1 + gx * gx + gy * gy)
+        nx, ny = -gx * nz, -gy * nz
+        dd = nx * L[0] + ny * L[1] + nz * L[2]
+        spec = 0.55 * np.clip(nx * hv[0] + ny * hv[1] + nz * hv[2], 0, 1) ** 22
+        rows = np.linspace(0, 1, a.shape[0], dtype=np.float32)[:, None]
+        brush = cv2.GaussianBlur(rng.standard_normal(a.shape).astype(np.float32), (0, 0), sigmaX=12, sigmaY=0.6)
+        brush /= brush.std() + 1e-6
+        base = (0.40 - 0.18 * rows) * (1 + 0.06 * brush) * np.clip(1 + 1.3 * (dd - L[2]), 0.45, 1.9)
+        rgb = np.clip(base[..., None] * np.array([0.93, 0.96, 1.0], np.float32) + spec[..., None], 0, 1)
+        pieces.append(dict(pm=np.dstack([rgb * a[..., None], a]).astype(np.float32), x=x, t0=t0, sep=(txt == '|')))
+        x += w
+    x0 = 983.0 - x / 2                       # centred on the crest's artwork
+    for p in pieces:
+        p['x'] += x0
+    R.motto, R.motto_y = pieces, 1963.0 + 100.0
+
+
+def motto_pieces(t):
+    out = []
+    for p in R.motto:
+        u = clamp((t - p['t0']) / MOTTO_ANIM)
+        if u <= 0:
+            continue
+        e = ease_out(u)
+        pm = p['pm'] * clamp(u * 1.6)
+        h, w = pm.shape[:2]
+        if p['sep']:
+            sy = max(int(h * (0.15 + 0.85 * e)), 1)
+            pm = cv2.resize(pm, (w, sy), interpolation=cv2.INTER_AREA)
+            dy = (h - sy) / 2
+        else:
+            dy = 28.0 * (1 - e)
+        out.append(('text', np.ascontiguousarray(pm), p['x'], R.motto_y + dy))
+    return out

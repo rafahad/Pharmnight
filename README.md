@@ -163,6 +163,7 @@ A 10-second vertical intro (2160×3840, 60 fps) that follows the second referenc
 | 2.45–3.7 s | the four scroll ornaments glide in from outside |
 | 3.5–6.05 s | EST 2011, then PHARMACY, then the banner, dots, dashes and STUDENT ASSOCIATION, letter by letter |
 | 6.05 s | complete: a gentle pulse |
+| 6.25–7.45 s | the motto **DUCATUS \| SCIENTIA \| MINISTERIUM** rises in under the crest, word by word, on three title hits |
 | 6.05–9.6 s | slight float, soft push-in, subtle tilt and depth separation between the scrolls, the shield and the lettering, a shimmer sweep, then sparkle glints at the edge points and travelling along the outline |
 | 9.6–10 s | a clean, front-on, still hold |
 
@@ -170,6 +171,7 @@ A 10-second vertical intro (2160×3840, 60 fps) that follows the second referenc
 
 * **Studio:** clean white with soft falloff and soft shadows. The crest sits slightly raised off the wall, as in the reference.
 * **Crest:** lit as a cast-metal badge at the client's request ("ultra realistic, mature"). The silver frame and scrolls are brushed metal, the maroon and white are clear-coated enamel with a soft studio highlight and window reflection, the beige details read as gold, and the edges are bevelled with an extruded side wall.
+* **Motto:** set in Cinzel Bold (SIL Open Font License) in dark brushed gunmetal with a bevel and soft shadow, so it reads clearly on white. It moves with the lettering layer during the float and push-in. To leave room for it, the crest is raised slightly and ends at about 78% of the frame width, and the motto stays above the TikTok/Reels caption zone.
 * **Artwork:** this is all lighting on top of the original. The layers recomposite the original artwork exactly, and no lettering, symbols or shapes are changed or added.
 
 ## Sound
@@ -180,7 +182,7 @@ Everything is synthesised from scratch in `src/psa_white/audio.py` and timed fro
 * **Frame:** a circular whoosh that pans with the frame sweep, ending in a firm lock.
 * **Scrolls:** whooshes panned to each side, landing on soft thuds.
 * **Letters:** soft texture ticks, heavier for PHARMACY.
-* **Reveal:** a reverse-cymbal rise into the reveal boom with a soft braam.
+* **Reveal:** a reverse-cymbal rise into the reveal boom with a soft braam, then three title hits for the motto words, building to MINISTERIUM.
 * **Finish:** an airy shimmer for the shimmer sweep and filtered-noise sparkles for the glints. There are no tonal pings.
 * **Score:** a warm string progression (Bm, G, A, then D add9 at the reveal) over a low pulse.
 

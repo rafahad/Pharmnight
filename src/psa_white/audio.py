@@ -205,6 +205,18 @@ add(sh[n // 2:], 7.0 + (n // 2) / SR, 0.05, 0.5)
 for j, tg in enumerate([8.2, 8.45, 8.7, 8.95, 9.15, 9.3]):        # glints: airy sparkles, no tones
     add(air_sparkle(0.14), tg + 0.18, 0.05, [-0.5, 0.5, -0.3, 0.3, -0.6, 0.6][j])
 
+# ---------------------------------------------------------------- motto: three elegant title hits
+for txt, t0 in WR.MOTTO:
+    if txt == '|':
+        continue
+    size = {'DUCATUS': 0.55, 'SCIENTIA': 0.68, 'MINISTERIUM': 0.9}[txt]
+    pan = {'DUCATUS': -0.3, 'SCIENTIA': 0.0, 'MINISTERIUM': 0.3}[txt]
+    hit = t0 + 0.15
+    add(whoosh(0.35, 400, 3500, 0.9), hit - 0.33, 0.08 * size, pan)
+    add(boom(48, 30, 1.6 + 0.6 * size), hit, 0.55 * size, 0, 'hit')
+    add(thump(85, 0.4, 0.4), hit, 0.30 * size, pan, 'hit')
+    add(braam_soft((26, 38, 45, 50) if txt != 'MINISTERIUM' else (26, 38, 45, 50, 54, 57), 1.6 + 0.8 * size), hit, 0.18 * size, pan, 'hit')
+
 # ---------------------------------------------------------------- score
 add(filt((np.sin(2 * np.pi * midi(26) * t_all) + 0.4 * np.sin(2 * np.pi * midi(33) * t_all)) *
          np.clip(t_all / 1.2, 0, 1) * (1 - np.clip((t_all - T) / 0.1, 0, 1)), 20, 300), 0, 0.14, 0, 'mus')
